@@ -20,6 +20,7 @@
             background-color: #0a1e3f; /* Azul mar profundo */
             border: 4px solid #1a3a6d;
             box-shadow: 0 0 30px rgba(0, 165, 255, 0.3);
+            cursor: pointer;
         }
     </style>
 </head>
@@ -58,9 +59,18 @@ let enemySpeed = 2;
 const enemyDrop = 15;
 
 // Estados del juego
+let inStartMenu = true; // Estado para la pantalla de inicio
 let gameOver = false;
 let gameFinished = false;
 let inTransition = false;
+
+// Botón de Inicio (Propiedades en Canvas)
+const startButton = {
+    x: 280,
+    y: 420,
+    width: 240,
+    height: 50
+};
 
 // Tiempos (en milisegundos)
 let transitionTimer = 0;
@@ -148,7 +158,7 @@ class Enemy {
         this.y = y;
         this.character = character; 
         this.color = color;
-        this.width = 45; // Ligeramente más ancho para que "Fe" quepa perfectamente
+        this.width = 45; 
         this.height = 30; 
         this.animationOffset = Math.random() * 10; 
     }
@@ -275,6 +285,11 @@ function createEnemyFleet() {
     levelStartTime = Date.now();
 }
 
+function startGame() {
+    inStartMenu = false;
+    resetGame();
+}
+
 function resetGame() {
     nivel = 1; score = 0; enemiesDestroyed = 0;
     hDestroyed = 0; cDestroyed = 0; feDestroyed = 0;
@@ -291,10 +306,16 @@ function rectCollision(rect1, rect2) {
            rect1.y + rect1.height > rect2.y;
 }
 
-// --- EVENTOS DEL TECLADO ---
+// --- EVENTOS DEL TECLADO Y MOUSE ---
 window.addEventListener("keydown", (e) => {
     keys[e.key] = true;
-    if (e.key === " " && !gameOver && !inTransition && !gameFinished) {
+    
+    if (inStartMenu && (e.key === " " || e.key === "Enter")) {
+        startGame();
+        return;
+    }
+
+    if (e.key === " " && !gameOver && !inTransition && !gameFinished && !inStartMenu) {
         lasers.push(new Laser(player.x + player.width / 2, player.y));
     }
     if ((e.key === "r" || e.key === "R") && (gameOver || gameFinished)) {
@@ -303,6 +324,100 @@ window.addEventListener("keydown", (e) => {
 });
 
 window.addEventListener("keyup", (e) => { keys[e.key] = false; });
+
+// Click del mouse para presionar el botón
+canvas.addEventListener("click", (e) => {
+    if (inStartMenu) {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        if (
+            mouseX >= startButton.x &&
+            mouseX <= startButton.x + startButton.width &&
+            mouseY >= startButton.y &&
+            mouseY <= startButton.y + startButton.height
+        ) {
+            startGame();
+        }
+    }
+});
+
+// Cambiar cursor sobre el botón
+canvas.addEventListener("mousemove", (e) => {
+    if (inStartMenu) {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        if (
+            mouseX >= startButton.x &&
+            mouseX <= startButton.x + startButton.width &&
+            mouseY >= startButton.y &&
+            mouseY <= startButton.y + startButton.height
+        ) {
+            canvas.style.cursor = "pointer";
+        } else {
+            canvas.style.cursor = "default";
+        }
+    } else {
+        canvas.style.cursor = "default";
+    }
+});
+
+// --- DIBUJAR PANTALLA DE INICIO ---
+function drawStartMenu() {
+    ctx.textAlign = "center";
+    
+    // Título
+    ctx.fillStyle = CYAN;
+    ctx.font = "bold 28px 'Courier New'";
+    ctx.fillText("INVASIÓN DE CANGREJOS QUÍMICOS", canvas.width / 2, 70);
+    
+    ctx.fillStyle = WHITE;
+    ctx.font = "bold 18px 'Courier New'";
+    ctx.fillText("--- MAR PROFUNDO ---", canvas.width / 2, 100);
+
+    // Explicación
+    ctx.fillStyle = WHITE;
+    ctx.font = "15px 'Courier New'";
+    ctx.fillText("Misión: Pilota la nave de Oxígeno (O) para neutralizar", canvas.width / 2, 150);
+    ctx.fillText("las hordas de Cangrejos Químicos en el fondo marino.", canvas.width / 2, 175);
+    ctx.fillText("Elimina elementos para sintetizar moléculas compuestas.", canvas.width / 2, 200);
+
+    // Controles
+    ctx.fillStyle = YELLOW;
+    ctx.font = "bold 16px 'Courier New'";
+    ctx.fillText("CONTROLES:", canvas.width / 2, 250);
+    
+    ctx.fillStyle = WHITE;
+    ctx.font = "14px 'Courier New'";
+    ctx.fillText("Flechas [Izquierda / Derecha] : Mover nave", canvas.width / 2, 280);
+    ctx.fillText("Barra Espaciadora : Disparar láser de Oxígeno", canvas.width / 2, 305);
+    ctx.fillText("Tecla [R] : Reiniciar tras perder o ganar", canvas.width / 2, 330);
+
+    // Botón Iniciar
+    ctx.fillStyle = HERO_BLUE;
+    ctx.fillRect(startButton.x, startButton.y, startButton.width, startButton.height);
+    
+    ctx.strokeStyle = WHITE;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(startButton.x, startButton.y, startButton.width, startButton.height);
+
+    ctx.fillStyle = WHITE;
+    ctx.font = "bold 20px 'Courier New'";
+    ctx.fillText("INICIAR JUEGO", canvas.width / 2, startButton.y + 32);
+
+    ctx.fillStyle = GREEN;
+    ctx.font = "13px 'Courier New'";
+    ctx.fillText("O presiona BARRA ESPACIADORA para comenzar", canvas.width / 2, 490);
+
+    // Créditos institucionales
+    ctx.fillStyle = CYAN;
+    ctx.font = "12px 'Courier New'";
+    ctx.fillText("Trabajo realizado por los estudiantes de 5to año del Instituto Joaquin V. Gonzalez", canvas.width / 2, 545);
+    ctx.fillText("materia: \"Construcción de la Práctica Docente y Recidencia - Año 2026\"", canvas.width / 2, 565);
+}
 
 // --- BUCLE PRINCIPAL (LOOP) ---
 function gameLoop() {
@@ -315,6 +430,25 @@ function gameLoop() {
             bubble.y = canvas.height;
             bubble.x = Math.random() * canvas.width;
         }
+    }
+
+    // Renderizar fondo común
+    ctx.fillStyle = "#0a1e3f";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Dibujar burbujas de fondo
+    ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+    for (let bubble of bubbles) {
+        ctx.beginPath();
+        ctx.arc(bubble.x, bubble.y, bubble.radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Verificar si estamos en la pantalla de inicio
+    if (inStartMenu) {
+        drawStartMenu();
+        requestAnimationFrame(gameLoop);
+        return;
     }
 
     // 1. Lógica del Juego
@@ -393,17 +527,6 @@ function gameLoop() {
     }
 
     // 2. Renderizado / Pintar Pantalla
-    ctx.fillStyle = "#0a1e3f";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Dibujar burbujas de fondo
-    ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
-    for (let bubble of bubbles) {
-        ctx.beginPath();
-        ctx.arc(bubble.x, bubble.y, bubble.radius, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
     if (gameFinished) {
         ctx.textAlign = "center";
         ctx.fillStyle = GREEN; ctx.font = "bold 40px 'Courier New'";
@@ -488,8 +611,7 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// Inicializar
-createEnemyFleet();
+// Inicializar ciclo de juego
 requestAnimationFrame(gameLoop);
 </script>
 
